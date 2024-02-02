@@ -1,4 +1,4 @@
-use supply_db;
+USE supply_db;
 
 SELECT * FROM Orders;
 
@@ -7,12 +7,12 @@ Also, exclude the SUSPECTED_FRAUD cases based on the Order Status,and sort the r
 
 
 SELECT 
-  Type as Type_of_transactions,Count(Order_id) as No_of_orders
+  TYPE AS Type_of_transactions,
+  Count(Order_id) AS No_of_orders
 FROM
    Orders
 WHERE
-   Order_City <> 'SANGLI' AND Order_city <> "Srinagar"
-   AND Order_status <> "Suspected Fraud"
+   Order_City <> 'SANGLI' AND Order_city <> "Srinagar" AND Order_status <> "Suspected Fraud"
 GROUP By Type_of_transactions
 Order by Count(Order_id) DESC;
    
@@ -37,99 +37,143 @@ select * from customer_info;
 
 -- 1. orderid level sales
 
-select ord.order_id, sum(sales) as ord_sales
-from orders as ord
-inner join
-ordered_items as itm
-ON ord.order_id = itm.order_id
-group by ord.order_id;
+SELECT 
+    ord.order_id, 
+    SUM(sales) AS ord_sales
+FROM
+    orders AS ord
+INNER JOIN
+    ordered_items AS itm 
+ON 
+	ord.order_id = itm.order_id
+GROUP BY 
+	ord.order_id;
 
 
 -- Filtering for completed orders only
 
-select ord.order_id, sum(sales) as ord_sales
-from orders as ord
-inner join
-ordered_items as itm
-ON ord.order_id = itm.order_id
-where order_status = "Complete"
-group by ord.order_id;
+SELECT 
+    ord.order_id, SUM(sales) AS ord_sales
+FROM
+    orders AS ord
+        INNER JOIN
+    ordered_items AS itm ON ord.order_id = itm.order_id
+WHERE
+    order_status = 'Complete'
+GROUP BY ord.order_id;
 
 -- Check if the above result is correct
 
-select Distinct order_id from orders where order_status <> "Complete";
+SELECT DISTINCT
+    order_id
+FROM
+    orders
+WHERE
+    order_status <> 'Complete';
 
-select * from ordered_items where order_id in (20346,20368);
+SELECT 
+    *
+FROM
+    ordered_items
+WHERE
+    order_id IN (20346 , 20368);
 
 -- Customer_id Level Summary  using CTE
 
-with order_summary as
+WITH order_summary AS
 (
-select ord.order_id, 
-sum(sales) as ord_sales
-from orders as ord
-inner join
-ordered_items as itm
-ON ord.order_id = itm.order_id
-where order_status = "Complete"
-group by ord.order_id
+	SELECT 
+		ord.order_id, 
+		sum(sales) AS ord_sales
+	FROM 
+		orders AS ord
+	INNER JOIN
+		ordered_items as itm
+	ON 
+		ord.order_id = itm.order_id
+	WHERE 
+		order_status = "Complete"
+	GROUP BY 
+		ord.order_id
 )
-SELECT * from order_summary as ord
+SELECT 
+	* 
+FROM 
+	order_summary as ord
 Inner Join 
-Customer_info as cust
-ON ord.customer_id = cust.id;
+	Customer_info as cust
+ON 
+	ord.customer_id = cust.id;
 
 -- Above query throws an error becausein inner joining wth ordersummary we havent selected the customer id  column while creating the common table expression
 -- so we can go back and add customer_od to our common table expression to remove the error
 
-with order_summary as
+WITH order_summary AS
 (
-select ord.order_id,
-ord.customer_id,
-sum(sales) as ord_sales
-from orders as ord
-inner join
-ordered_items as itm
-ON ord.order_id = itm.order_id
-where order_status = "Complete"
-group by ord.order_id
+	SELECT
+		ord.order_id,
+		ord.customer_id,
+		sum(sales) as ord_sales
+	FROM
+		orders as ord
+	INNER JOIN
+		ordered_items as itm
+	ON 
+		ord.order_id = itm.order_id
+	WHERE 
+		order_status = "Complete"
+	GROUP BY 
+		ord.order_id
 )
-SELECT * from order_summary as ord
-Inner Join 
-Customer_info as cust
-ON ord.customer_id = cust.id;
+SELECT * 
+FROM 
+	order_summary AS ord
+INNER JOIN
+	Customer_info as cust
+ON 
+	ord.customer_id = cust.id;
 
 -- Again we dont neeed all this data we only need Customer_id first name , state , city , completed order and total sales so 
 
-with order_summary as
+WITH order_summary as
 (
-select ord.order_id,
-ord.customer_id,
-sum(sales) as ord_sales
-from orders as ord
-inner join
-ordered_items as itm
-ON ord.order_id = itm.order_id
-where order_status = "Complete"
-group by ord.order_id
+SELECT 
+	ord.order_id,
+	ord.customer_id,
+	sum(sales) AS ord_sales
+FROM
+	orders AS ord
+INNER JOIN
+	ordered_items as itm
+ON 
+	ord.order_id = itm.order_id
+WHERE
+	order_status = "Complete"
+GROUP BY
+	ord.order_id
 )
-SELECT id as Customer_id,
-First_name as Customer_Name,
-City as Customer_City,
-State as Customer_State,
-COUNT(Distinct order_id) as Completed_orders,
-Sum(Ord_sales) as Total_sales
-from order_summary as ord
-Inner Join 
-Customer_info as cust
-ON ord.customer_id = cust.id
-Group by 
-Customer_id, 
-Customer_name, 
-customer_City, 
-Customer_State
-Order by Completed_orders DESC, Total_sales DESC
-limit 3;
+SELECT 
+	id AS Customer_id,
+	First_name AS Customer_Name,
+	City AS Customer_City,
+	State AS Customer_State,
+	COUNT(DISTINCT order_id) AS Completed_orders,
+	Sum(Ord_sales) AS Total_sales
+FROM 
+	order_summary AS ord
+INNER JOIN
+	Customer_info as cust
+ON 
+	ord.customer_id = cust.id
+GROUP BY 
+	Customer_id, 
+	Customer_name, 
+	customer_City, 
+	Customer_State
+ORDER By 
+	Completed_orders DESC, 
+    Total_sales DESC
+LIMIT 3;
 
 
 -- using dense rank
@@ -137,38 +181,41 @@ limit 3;
 With Order_summary as
 (
 
-	SELECT ord.order_id , sum(sales) as ord_sales, customer_id
-	from 
-	   orders as ord
-	inner join
+	SELECT 
+		ord.order_id , 
+		sum(sales) AS ord_sales, 
+		customer_id
+	FROM
+	   orders AS ord
+	INNER join
 	   ordered_items as itm
-	On
-	  ord.order_id = itm.order_id
+	ON
+	   ord.order_id = itm.order_id
 	WHERE
-	 order_status = "Complete"
-	group by 
-   ord.order_id
+	   order_status = "Complete"
+	GROUP BY 
+	   ord.order_id
 )   
 SELECT 
-   id as Customer_id, 
-   First_name as Customer_name, 
-   city as Customer_City , 
-   state as Customer_state ,
-   count(Distinct order_id) as Completed_orders,
-   Sum(ord_sales) as Total_sales,
-   Dense_rank() over(order by count(Distinct order_id) DESC, Sum(ord_sales) DESC) Top_customers
+   id AS Customer_id, 
+   First_name AS Customer_name, 
+   city AS Customer_City , 
+   state AS Customer_state ,
+   count(Distinct order_id) AS Completed_orders,
+   Sum(ord_sales) AS Total_sales,
+   DENSE_RANK() OVER(ORDER BY count(Distinct order_id) DESC, Sum(ord_sales) DESC) Top_customers
 FROM
-   order_summary as ord
+   order_summary AS ord
 INNER JOIN 
-   Customer_info as cust
-on 
+   Customer_info AS cust
+ON 
  ord.customer_id = cust.id
- Group by 
+GROUP BY 
     Customer_id,
     Customer_name,
     Customer_city,
     Customer_state
-Limit 3;
+LIMIT 3;
 
 
 -- QUESTION 3>. Get the order count by the Shipping Mode and the Department Name. Consider departments with at least 40 closed/completed orders.
@@ -180,31 +227,31 @@ select* from ordered_items;
 select * from product_info;
 -- Count(ord.order_id)as order_count
 
-With dept_summary as
+WITH dept_summary AS
 (
-SELECT 
-	 ord.order_id ,ord.shipping_mode , dept.Name as department_name
-FROM
-	orders as ord
-INNER JOIN
-	ordered_items as itm
-ON 
-	ord.order_id = itm.order_id
-INNER JOIN
-    product_info as prod
-ON 
-	itm.item_id = prod.Product_Id
-INNER JOIN
-    Department as dept 
-ON
-	prod.department_id = dept.id
-WHERE
-	order_status in('Complete','Closed')
+	SELECT 
+		 ord.order_id ,ord.shipping_mode , dept.Name as department_name
+	FROM
+		orders as ord
+	INNER JOIN
+		ordered_items as itm
+	ON 
+		ord.order_id = itm.order_id
+	INNER JOIN
+		product_info as prod
+	ON 
+		itm.item_id = prod.Product_Id
+	INNER JOIN
+		Department as dept 
+	ON
+		prod.department_id = dept.id
+	WHERE
+		order_status in('Complete','Closed')
 )
 SELECT 
 	shipping_mode, 
 	department_name, 
-	count(order_id) as order_count
+	count(order_id) AS order_count
 FROM 
 	dept_summary
 GROUP BY 
@@ -229,16 +276,16 @@ HAVING
 Which shipping mode was observed to have the highest number of delayed orders?m*/
 
 
-select * from orders;
+SELECT * FROM orders;
 
-With Shipment_summary as
+WITH Shipment_summary AS
 (
-Select 
-	 Order_id as ord,
-    Real_Shipping_days,
-    Scheduled_shipping_days,
-    Shipping_mode,
-    Order_status,
+SELECT 
+	 Order_id AS ord,
+     Real_Shipping_days,
+     Scheduled_shipping_days,
+     Shipping_mode,
+     Order_status,
     CASE 
 		WHEN Order_Status in('Suspected_Fraud', 'Canceled') THEN 'CANCELED SHIPMENT'
         WHEN Real_Shipping_days < Scheduled_shipping_days THEN 'Within Schedule'
@@ -263,7 +310,7 @@ ORDER BY
     LIMIT 1;
     
     
-/* An order is canceled when the status of the order is either CANCELED or SUSPECTED_FRAUD. 
+/* QUESTION 5 >. An order is canceled when the status of the order is either CANCELED or SUSPECTED_FRAUD. 
 Obtain the list of states by the order cancellation% and sort them in the descending order of the cancellation%.
 Definition: Cancellation% = Cancelled order / Total orders */
 
@@ -283,12 +330,12 @@ WITH Canceled_orders_summary AS
 total_order_summary AS 
 (
 	SELECT 
-	order_state,
-	COUNT(order_id) AS Total_orders
-FROM
-	Orders
-GROUP BY
-	order_state
+	  order_state,
+	  COUNT(order_id) AS Total_orders
+    FROM
+	  Orders
+    GROUP BY
+	  order_state
 )
 SELECT 
 	t.order_state,
